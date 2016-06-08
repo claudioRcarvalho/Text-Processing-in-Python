@@ -1,0 +1,729 @@
+ESTE É mainmatter
+
+CAPÍTULO I - PRINCÍPIOS BÁSICOS PYTHON
+-------------------------------------------------- -----------------
+
+   Este capítulo discute as capacidades Python que são susceptíveis de
+   ser utilizado em aplicações de processamento de texto. Para uma introdução
+   para Python sintaxe e semântica, por si só, os leitores podem querer
+   pular para o Apêndice A (A seletiva e impressionista
+   Crítica Curta de Python); _Python Guido van Rossum Tutorial_
+   em <http://python.org/doc/current/tut/tut.html> também é bastante
+   excelente. O foco aqui ocupa um nível um pouco maior:
+   não a linguagem Python restrito, mas também ainda não específico para
+   processamento de texto.
+
+   Na Seção 1.1, eu olho para algumas técnicas de programação que o fluxo
+   para fora da linguagem Python em si, mas que não são normalmente
+   óbvio para iniciantes Python - e às vezes não são evidentes, mesmo
+   para programadores intermediários Python. As técnicas de programação
+   que são discutidos são aqueles que tendem a ser aplicável a texto
+   contextos de processamento - outras tarefas de programação são susceptíveis de ter
+   os seus próprios truques e expressões que não estão explicitamente documentados em
+   este livro.
+
+   Na Seção 1.2, módulos de documentos na biblioteca padrão Python
+   que provavelmente você vai usar em seu aplicativo de processamento de texto,
+   ou pelo menos pretende manter na parte de trás de sua mente. A
+   número de outros módulos da biblioteca padrão do Python são o suficiente
+   longe de processamento de texto que é improvável que você usá-los em
+   este tipo de aplicação. Tais módulos restantes estão documentados
+   muito brevemente com uma ou duas linhas descrições. Mais detalhes sobre
+   cada módulo pode ser encontrado com a documentação padrão do Python.
+
+
+SEÇÃO 1 - Técnicas e Padrões
+-------------------------------------------------- ----------------------
+
+  TOPIC - Utilizando funções de ordem superior em Processamento de Texto
+  -------------------------------------------------- ------------------
+
+  Este tópico merece uma primeira advertência. Ele salta pé de primeira em
+  funções de ordem superior (Hofs) a um nível bastante sofisticado
+  e podem ser desconhecidos até mesmo para experientes programadores Python. Fazer
+  não estar muito assustado com este primeiro tópico - você pode entender a
+  resto do livro sem ele. Se a programação funcional (FP)
+  conceitos deste tópico parece estranho para você, eu recomendo que você
+  avançar para o Apêndice A, especialmente a sua seção final sobre FP
+  conceitos.
+
+  No processamento de texto, uma freqüentemente age sobre uma série de pedaços
+  de texto que são, em certo sentido, homogénea. Na maioria das vezes, estes
+  pedaços são linhas, delimitados por caracteres de nova linha - mas
+  às vezes outros tipos de campos e blocos são relevantes.
+  Além disso, o Python tem funções padrão e sintaxe para a leitura
+  em linhas de um arquivo (sensível a diferenças de plataforma).
+  Obviamente, esses pedaços não são totalmente homogêneos - eles podem
+  conter dados variáveis. Mas no nível que se preocupar durante
+  processamento, cada bloco contém uma parcela natural de instrução
+  ou informações.
+
+  Como exemplo, considere um fragmento de código imperativo estilo que
+  seleciona apenas as linhas de texto que correspondem a um critério
+  'isCond()':
+
+      #*---------- Imperative style line selection ------------#
+      selected = []                 # temp list to hold matches
+      fp = open(filename):
+      for line in fp.readlines():   # Py2.2 -> "for line in fp:"
+          if isCond(line):          # (2.2 version reads lazily)
+              selected.append(line)
+      del line                      # Cleanup transient variable
+
+  Não há nada errado com estas poucas linhas (ver [xreadlines]
+  em questões de eficiência). Mas isso não demorar alguns segundos para ler
+  através deles. Na minha opinião, mesmo este pequeno bloco de linhas
+  não analisa como um único pensamento, apesar de sua operação
+  realmente é tal. Além disso, a variável "linha" é ligeiramente
+  supérfluo (e que retém um valor como um efeito colateral após a
+  loop e também pode conseguir pisar em um previamente definido
+  valor). Em estilo FP, poderíamos escrever a mais simples:
+
+      #*---------- Functional style line selection ------------#
+      selected = filter(isCond, open(filename).readlines())
+      # Py2.2 -> filter(isCond, open(filename))
+
+  No concreto, uma fonte textual que uma freqüência deseja
+  processo como uma lista de linhas é um arquivo de log. Todos os tipos de
+  aplicações de produzir arquivos de log, mais tipicamente, quer aqueles que
+  provocar mudanças no sistema que pode precisar ser examinado ou
+  de longa duração aplicações que executam ações de forma intermitente.
+  Por exemplo, o PythonLabs instalador do Windows para o Python 2.2
+  produz um arquivo chamado 'INSTALL.LOG' que contém uma lista de
+  ações tomadas durante a instalação. Abaixo está uma resumida muito
+  cópia deste arquivo de um dos meus computadores:
+
+      #------------ INSTALL.LOG sample data file --------------#
+      Title: Python 2.2
+      Source: C:\DOWNLOAD\PYTHON-2.2.EXE | 02-23-2002 | 01:40:54 | 7074248
+      Made Dir: D:\Python22
+      File Copy: D:\Python22\UNWISE.EXE | 05-24-2001 | 12:59:30 | | ...
+      RegDB Key: Software\Microsoft\Windows\CurrentVersion\Uninstall\Py...
+      RegDB Val: Python 2.2
+      File Copy: D:\Python22\w9xpopen.exe | 12-21-2001 | 12:22:34 | | ...
+      Made Dir: D:\PYTHON22\DLLs
+      File Overwrite: C:\WINDOWS\SYSTEM\MSVCRT.DLL | | | | 295000 | 770c8856
+      RegDB Root: 2
+      RegDB Key: Software\Microsoft\Windows\CurrentVersion\App Paths\Py...
+      RegDB Val: D:\PYTHON22\Python.exe
+      Shell Link: C:\WINDOWS\Start Menu\Programs\Python 2.2\Uninstall Py...
+      Link Info: D:\Python22\UNWISE.EXE | D:\PYTHON22 |  | 0 | 1 | 0 |
+      Shell Link: C:\WINDOWS\Start Menu\Programs\Python 2.2\Python ...
+      Link Info: D:\Python22\python.exe | D:\PYTHON22 | D:\PYTHON22\...
+
+  Você pode ver que cada ação registrada pertence a um dos vários
+  tipos. Um aplicativo de processamento, presumivelmente, lidar com cada
+  tipo de ação diferente (especialmente desde que cada ação tem
+  diferentes campos de dados associados). É muito fácil
+  para escrever funções booleanas que identificam tipos de linha, por exemplo:
+
+      #*------- Boolean "predicative" functions on lines -------#
+      def isFileCopy(line):
+          return line[:10]=='File Copy:' # or line.startswith(...)
+      def isFileOverwrite(line):
+          return line[:15]=='File Overwrite:'
+
+  O método string '"". Startswith () 'é menos propenso a erros do que uma
+  fatia inicial para versões recentes do Python, mas estes exemplos
+  são compatíveis com o Python 1,5. Em um pouco mais compacto
+  estilo de programação funcional, você também pode escrevê-las como:
+
+      #*----------- Functional style predicates ---------------#
+      isRegDBRoot = lambda line: line[:11]=='RegDB Root:'
+      isRegDBKey = lambda line: line[:10]=='RegDB Key:'
+      isRegDBVal = lambda line: line[:10]=='RegDB Val:'
+
+  Seleção de linhas de um determinado tipo é feito exatamente como acima:
+
+      #*----------- Select lines that fill predicate ----------#
+      lines = open(r'd:\python22\install.log').readlines()
+      regroot_lines = filter(isRegDBRoot, lines)
+
+  Mas se você quiser selecionar a vários critérios, um estilo FP
+  inicialmente pode tornar-se complicada. Por exemplo, suponha que você é
+  interessado todas as "linhas" RegDB, você poderia escrever um novo costume
+  função para este filtro:
+
+      #*--------------- Find the RegDB lines ------------------#
+      def isAnyRegDB(line):
+          if   line[:11]=='RegDB Root:': return 1
+          elif line[:10]=='RegDB Key:':  return 1
+          elif line[:10]=='RegDB Val:':  return 1
+          else:                          return 0
+      # For recent Pythons, line.startswith(...) is better
+
+  Programar uma função personalizada para cada condição combinado pode
+  produzir um excesso de funções nomeadas. Mais importante ainda, cada tais
+  função personalizada exige um mínimo de trabalho para escrever e tem uma
+  possibilidade zero de introduzir um bug. Para as condições de que
+  deve ser em conjunto satisfeito, você pode escrever personalizado
+  funções ou aninhar vários filtros dentro do outro. para
+  exemplo:
+
+      #*------------- Filter on two line predicates -----------#
+      shortline = lambda line: len(line) < 25
+      short_regvals = filter(shortline, filter(isRegDBVal, lines))
+
+  Neste exemplo, contamos com funções previamente definidas para o
+  filtrar. Qualquer erro nos filtros irá estar em qualquer 'Shortline ()'
+  ou 'isRegDBVal ()', mas não de forma independente em alguns terceira função
+  "isShortRegVal ()". Tais filtros aninhadas, no entanto, são difíceis de
+  ler - especialmente se mais de dois estão envolvidos.
+
+  As chamadas para 'map()' são, por vezes de forma semelhante se vários
+  operações devem ser executadas na mesma string. Para uma justa
+  exemplo trivial, suponha que você quis inverter, capitalizar, e
+  normalizar os espaços em branco em linhas de texto. Criando o apoio
+  funções é simples, e eles podiam ser encaixados no 'map()' calls:
+
+      #*------------ Multiple line transformations ------------#
+      from string import upper, join, split
+      def flip(s):
+          a = list(s)
+          a.reverse()
+          return join(a,'')
+      normalize = lambda s: join(split(s),' ')
+      cap_flip_norms = map(upper, map(flip, map(normalize, lines)))
+
+   Este tipo de 'map()' ou 'filter()' aninhado é difícil de ler, e
+   deve ser evitada. Além disso, pode-se, por vezes, ser arrastado para
+   'map()' alternada de nidificação e 'filter()' chamadas, tornando as coisas
+   ainda pior. Por exemplo, suponha que você deseja executar vários
+   operações em cada uma das linhas que se encontram vários critérios. para
+   evitar essa armadilha, muitos programadores cair de volta para uma mais detalhada
+   estilo de codificação imperativo que simplesmente quebra as listas em alguns
+   laços e cria algumas variáveis ??temporárias para intermediário
+   resultados.
+
+   Dentro de um estilo de programação funcional, não deixa de ser possível
+   para evitar a armadilha de apelo excessivo de nidificação. A chave para fazer
+   esta é uma selecção inteligente de uma combinatória poucos
+   -funções de ordem superior. Em geral, uma função de ordem superior é
+   aquele que toma como argumento, ou retorna como resultado de uma função
+   objeto. De primeira ordem funções apenas tomar alguns dados como argumentos
+   e produzir um dado como uma resposta (talvez uma estrutura de dados como um
+   lista ou dicionário). Em contraste, os "inputs" e "Saídas" de um
+   HOF são mais objetos de função - mais geralmente destinados a ser
+   eventualmente chamado algures mais adiante no fluxo do programa.
+
+   Um exemplo de uma função de ordem superior é uma função-fábrica:
+   uma função (ou classe) que retorna uma função, ou coleção de
+   funções, que são de alguma forma "configurado" no momento da sua
+   criação. O "Olá Mundo" de fábricas de função é uma
+   "somador" de fábrica. Como "Olá Mundo", uma fábrica de somador existe
+   apenas para mostrar que pode ser feito, mas realmente não-fazer nada-
+   útil por si só. Praticamente todas as explicação da função
+   fábricas utiliza um exemplo, tais como:
+
+      >>> def adder_factory(n):
+      ...    return lambda m, n=n: m+n
+      ...
+      >>> add10 = adder_factory(10)
+      >>> add10
+      <function <lambda> at 0x00FB0020>
+      >>> add10(4)
+      14
+      >>> add10(20)
+      30
+      >>> add5 = adder_factory(5)
+      >>> add5(4)
+      9
+
+   Para tarefas de processamento de texto, as fábricas de função simples são de
+   menos interesse do que são-combinatória-Hofs. A idéia de um
+   função de ordem superior combinatória é tomar várias (normalmente
+   de primeira ordem) funções como argumentos e retorna uma nova função
+   que de alguma forma sintetiza as operações do argumento funções.
+   Abaixo é uma biblioteca combinatória de funções simples de ordem superior HOFs
+   que conseguem surpreender muito em um pequeno número de linhas:
+
+      #------------------- combinatorial.py -------------------#
+      from operator import mul, add, truth
+      apply_each = lambda fns, args=[]: map(apply, fns, [args]*len(fns))
+      bools = lambda lst: map(truth, lst)
+      bool_each = lambda fns, args=[]: bools(apply_each(fns, args))
+      conjoin = lambda fns, args=[]: reduce(mul, bool_each(fns, args))
+      all = lambda fns: lambda arg, fns=fns: conjoin(fns, (arg,))
+      both = lambda f,g: all((f,g))
+      all3 = lambda f,g,h: all((f,g,h))
+      and_ = lambda f,g: lambda x, f=f, g=g: f(x) and g(x)
+      disjoin = lambda fns, args=[]: reduce(add, bool_each(fns, args))
+      some = lambda fns: lambda arg, fns=fns: disjoin(fns, (arg,))
+      either = lambda f,g: some((f,g))
+      anyof3 = lambda f,g,h: some((f,g,h))
+      compose = lambda f,g: lambda x, f=f, g=g: f(g(x))
+      compose3 = lambda f,g,h: lambda x, f=f, g=g, h=h: f(g(h(x)))
+      ident = lambda x: x
+
+   Mesmo com pouco mais de uma dúzia de linhas, muitas delas combinatória
+   funções são meramente funções de conveniência que envolvem mais outro
+   os gerais. Vamos dar uma olhada em como podemos usar esses Hofs a
+   simplificar alguns dos exemplos anteriores. Os mesmos nomes são usados
+   para resultados, por isso olhe para cima para comparações:
+
+       # ----- Alguns exemplos usando funções de ordem superior ----- #
+       # Não filtros ninho, apenas produzir func que faz as duas coisas
+      short_regvals = filter(both(shortline, isRegDBVal), lines)
+
+      # Não multiplicar funções para isto, basta descrever o necessário
+      regroot_lines = filter(some([isRegDBRoot, isRegDBKey, isRegDBVal]), lines)
+
+      # Não aninhar transformações, fazer uma transformação combinada
+      capFlipNorm = compose3(upper, flip, normalize)
+      cap_flip_norms = map(capFlipNorm, lines)
+
+   No exemplo, ligamos o composto função 'capFlipNorm' para
+   legibilidade. A linha 'map ()' correspondente expressa apenas o
+   single-pensamento-de aplicação de uma operação comum a todas as linhas.
+   Mas a ligação também ilustra alguns dos a flexibilidade do
+   funções combinatórias. Por condensação as várias operações
+   anteriormente aninhado em vários 'map () de chamadas, podemos salvar o
+   operação combinada para reutilização em outras partes do programa.
+
+   Como regra geral, eu não recomendo usar mais de um
+   'filter () "e um" mapa ()' em qualquer linha de código. Se estes
+   "lista de aplicativos" funções precisam aninhar mais profundamente do que isso,
+   legibilidade é preservada por salvar os resultados para os nomes intermediários.
+   Sucessivas linhas de estilo de programação funcional como chama
+   se reverter para um estilo mais imperativo -, mas uma maravilhosa
+   coisa sobre Python é o grau em que permite conexão direta
+   combinações de estilos de programação diferentes. Por exemplo:
+
+      #*------ Limite profundidade de aninhamento de map()/filter()------#
+      intermed = filter(niceProperty, map(someTransform, lines))
+      final = map(otherTransform, intermed)
+
+   Qualquer chamadas 'map()' aninhamento de sucessivas 'filter()' ou, no entanto,
+   pode ser reduzido a funções individuais utilizando o combinatória adequada
+   Hofs. Portanto, o número de fases processuais necessárias é muito
+   muito sempre muito pequena. No entanto, a redução no total
+   linhas de código-é compensado pelas linhas usadas para dar nomes a
+   funções combinatórias. No geral, FP código de estilo é geralmente de cerca de
+   um-a metade do comprimento de equivalentes estilo imperativo (menos linhas
+   geralmente significam erros correspondentemente menos).
+
+   Um recurso interessante de funções combinatórias é que eles podem
+   fornecer uma álgebra booleana completa para funções que não têm
+   sido chamado ainda (o uso de 'operator.add' e 'operator.mul' em
+   'combinatorial.py' é mais do que acidental, em que sentido). para
+   exemplo, com uma coleção de valores simples, você pode expressar uma
+   (complexo) relação de valores de verdade múltiplos como, por exemplo:
+
+       # * ---------- Álgebra booleana simples de valores ---------- #
+      satisfied = (this or that) and (foo or bar)
+
+  No caso de processamento de texto em pedaços de texto, estes verdade
+  Os valores são muitas vezes os resultados de funções predicativas aplicados
+  para um pedaço, por exemplo:
+
+      # * ---------- Álgebra booleana de valores de retorno ---------- #
+      satisfied = (thisP(s) or thatP(s)) and (fooP(s) or barP(s))
+
+  Em uma expressão como a citada acima, predicativo vários
+  funções são aplicadas a mesma cadeia (ou outro objecto), e
+  um conjunto de relações lógicas sobre os resultados são avaliados. mas
+  esta expressão é em si um predicado lógico do string. para
+  clareza de nomes - e especialmente se você quiser avaliar o mesmo
+  predicado mais de uma vez - é conveniente criar um real
+  funcionar expressando o predicado:
+
+      #*------ Álgebra booleana de funções compostas ------#
+      satisfiedP = both(either(thisP,thatP), either(fooP,barP))
+
+  Usando uma função predicativa criado com combinatória
+  técnicas é a mesma como a utilização de qualquer outra função:
+
+      #*------ Utilização de uma função de composição Boolean ------#
+      selected = filter(satisfiedP, lines)
+
+  EXERCÍCIO: Mais sobre funções combinatórias
+  -------------------------------------------------- ------------------
+
+  "Combinatorial.py" O módulo apresentado acima fornece algumas das
+  os mais úteis combinatória funções de ordem superior.
+  Mas há espaço para aumento na breve exemplo. criando
+  uma biblioteca pessoal ou da organização do Hofs úteis é uma forma de
+  melhorar a capacidade de reutilização do seu processamento de texto atual
+  bibliotecas.
+
+  Perguntas:
+
+  1.  Algumas das funções definidas em 'combinatorial.py' são
+      não é, estritamente falando, combinatória. Em um sentido preciso,
+      uma função combinatória deve assumir uma ou mais
+      funções como argumentos e retorna uma ou mais funções
+      objetos que "combinar" os argumentos de entrada. identificar quais
+      funções não são "estritamente" combinatória, e determinar
+      exatamente o tipo de coisa que cada um faz retorno.
+
+  2.  As funções 'both()' e 'and_()' fazem quase a mesma
+      coisa. Mas diferem em um importante, embora forma sutil.
+      'and_() ', como o operador de Python 'and', usos atalhista-
+      na sua avaliação. Considere as seguintes linhas:
+
+      >>> f = lambda n: n**2 > 10
+      >>> g = lambda n: 100/n > 10
+      >>> and_(f,g)(5)
+      1
+      >>> both(f,g)(5)
+      1
+      >>> and_(f,g)(0)
+      0
+      >>> both(f,g)(0)
+      Traceback (most recent call last):
+      ...
+
+      O atalho 'and_()' pode potencialmente permitir que o primeiro
+      funcionar para agir como um "guarda" para o segundo. o segundo
+      função nunca é chamado, se a primeira função retorna um
+      valor falso em um argumento dado.
+
+      a. Criar um semelhante atalhista 'or_()' combinatória
+         função de sua biblioteca.
+
+      b. Criar funções atalho gerais 'shortcut_all()'
+         e 'shortcut_some()' que se comportam de forma semelhante à
+         funções 'all()' e 'some()', respectivamente.
+
+      c. Descreva algumas situações em que nonshortcutting
+         funções combinatórias como 'both()', 'all()', ou
+         "anyof3 ()" são mais desejáveis ??do que atalhista semelhante
+         funções.
+
+  3.  A função 'ident()'parece ser inútil, uma vez que ela simplesmente
+      retorna o valor que é passado para ela. Na verdade, 'ident()' é uma
+      função quase indispensável para uma coleção combinatória.
+      Explique o significado de 'ident()'.
+
+      Dica: Suponha que você tenha uma lista de linhas de texto, onde alguns
+      das linhas podem ser cadeias vazias. O filtro pode você
+      aplicar para encontrar todas as linhas que começam com um '#'?
+
+  4.  A função 'not_()' pode fazer uma boa adição a um
+      biblioteca combinatória. Podemos definir esta função como:
+
+      >>> not_ = lambda f: lambda x, f=f: not f(x)
+
+      Explorar algumas situações em que a função 'not_()' o ajudariam
+      programação combinatório.
+
+  5.  A função 'apply_each()' é usada em 'combinatorial.py'
+      construir algumas outras funções. Mas a utilidade do
+      'apply_each()' é mais geral do que o seu papel de apoio
+      poderia sugerir. Um uso trivial de 'apply_each ()' pode
+      algo como:
+
+      >>> apply_each(map(adder_factory, range(5)),(10,))
+      [10, 11, 12, 13, 14]
+
+      Explorar algumas situações em que 'apply_each ()' simplifica
+      aplicação de várias operações a um pedaço de texto.
+
+  6.  Ao contrário das  funções 'all()' e 'some()', as funções
+      'compose()' and 'compose3()'  tem um número fixo de entrada
+      funções como argumentos. Criar uma composição generalizada
+      função que recebe uma lista de funções de entrada, de qualquer
+      comprimento, como um argumento.
+
+  7.  Que outras funções combinatórias de ordem superior que tenham
+      não foi discutida aqui são susceptíveis de ser útil em processamento
+      de texto? Considere outras formas de combinação de funções primeira
+      ordem em operações úteis, e adicioná-los à sua biblioteca.
+      Quais são bons nomes para estas Hofs aprimorados?
+
+  TOPIC - Especializada Datatypes Python
+  -------------------------------------------------- ------------------
+
+  Python vem com uma excelente colecção de padrão
+  tipos de dados - Apêndice A discute cada tipo de built-in. Ao mesmo
+  tempo, um princípio importante da programação Python torna tipos
+  menos importante do que os programadores que vêm de outras línguas tendem
+  esperar. De acordo com o princípio do Python "de penetrante
+  polimorfismo "(a minha própria moeda), é mais importante que um
+  objeto faz do que aquilo que é. Outra forma comum de colocar
+  o princípio é: se ele anda como um pato e grasna como um pato,
+  tratá-lo como um pato.
+
+  Em termos gerais, a idéia por trás polimorfismo está deixando o mesmo
+  função ou trabalho do operador sobre as coisas de tipos diferentes. Em C++ ou
+  Java, por exemplo, você pode usar o método baseado em assinaturas
+  sobrecarga para permitir que uma operação se aplica a vários tipos de coisas
+  (agindo de forma diferente conforme a necessidade). Por exemplo:
+
+      #------------ C++ polimorfismo baseado em assinatura -----------#
+      #include <stdio.h>
+      class Print {
+      public:
+        void print(int i)    { printf("int %d\n", i); }
+        void print(double d) { printf("double %f\n", d); }
+        void print(float f)  { printf("float %f\n", f); }
+      };
+      main() {
+        Print *p = new Print();
+        p->print(37);      /* --> "int 37" */
+        p->print(37.0);    /* --> "double 37.000000" */
+      }
+
+  A tradução mais direta do Python baseada em assinaturas sobrecarga
+  é uma função que executa verificações de tipo sobre o seu argumento(s). é
+  simples escrever tais funções:
+
+      # ------- Python "baseado em assinaturas" polimorfismo ----------- #
+      def Print(x):
+          from types import *
+          if type(x) is FloatType:  print "float", x
+          elif type(x) is IntType:  print "int", x
+          elif type(x) is LongType: print "long", x
+
+  Escrever assinatura funções baseadas, no entanto, é extremamente
+  un-Pythonic. Se você está executando esses tipos de
+  verificações de tipo explícitas, você provavelmente não entendeu a
+  problema que pretende resolver corretamente! O que você deve--(geralmente)
+  estar interessado em não é o tipo de 'x' é, mas sim se 'x'
+  pode executar a ação que você precisa para executar (independentemente do que
+  tipo de coisa é estritamente).
+
+  POLIMORFISMO Pythonic:
+
+  Provavelmente o caso mais comum onde polimorfismo penetrante
+  é útil é na identificação de "arquivo-como" objetos. Há muitos
+  objetos que podem fazer coisas que os arquivos podem fazer, como os
+  criado com [urllib], [cStringIO], [zipfile], e por outro
+  significa. Vários objetos podem executar apenas subconjuntos do que real
+  arquivos podem: alguns podem ler, outros podem escrever, outros ainda podem
+  procurar, e assim por diante. Mas, para muitos propósitos, você não tem necessidade de
+  exercer todos os "file-like" capacidade - é bom o suficiente para fazer
+  certeza de que um objeto especificado tem esses recursos que você realmente
+  precisa.
+
+  Aqui está um exemplo típico. Eu tenho um módulo que utiliza DOM para trabalhar
+  com documentos XML, eu gostaria que os usuários sejam capazes de especificar um
+  XML em qualquer fonte de várias maneiras: usando o nome de um arquivo XML,
+  passando um objeto como arquivo que contém XML, ou indicando um
+  já construída objeto DOM para trabalhar com (construído com qualquer um dos vários
+  Bibliotecas XML). Além disso, os futuros usuários do meu módulo pode obter a sua
+  XML a partir de lugares novos eu nem sequer pensava (um RDBMS, sobre
+  sockets, etc.) Ao olhar para o que um objeto candidato poder fazer, eu
+  pode apenas utilizar qualquer objeto recursos que tem:
+
+      # -------- Python polimorfismo baseado em capacidades ----------- #
+      def toDOM(xml_src=None):
+          from xml.dom import minidom
+          if hasattr(xml_src, 'documentElement'):
+              return xml_src    # it is already a DOM object
+          elif hasattr(xml_src,'read'):
+              # it is something that knows how to read data
+              return minidom.parseString(xml_src.read())
+          elif type(xml_src) in (StringType, UnicodeType):
+              # it is a filename of an XML document
+              xml = open(xml_src).read()
+              return minidom.parseString(xml)
+          else:
+              raise ValueError, "Must be initialized with " +\
+                    "filename, file-like object, or DOM object"
+
+  Mesmo simples de aparência tipos numéricos têm diferentes capacidades. como
+  com outros objetos, você não deve geralmente se preocupam com o
+  representação interna de um objeto, mas sim sobre o que
+  pode fazer. Claro que, como uma forma de assegurar que um objecto tem uma
+  capacidade, é muitas vezes conveniente forçá-lo para um tipo usando
+  o built-in funções 'complex()', 'dict()', 'float()', 'int()',
+  'list()', 'long()', 'str()', 'tuple()' and 'unicode()'. Todas
+  estas funções fazem um bom esforço para transformar qualquer coisa que
+  parece um pouco como o tipo de coisa que eles nome em uma verdadeira
+  instância dele. Geralmente não é necessário, porém, na verdade, para
+  transformar os valores para tipos prescritos, novamente podemos apenas verificar
+  capacidades.
+
+  Por exemplo, suponha que você deseja remover o 'mínimo
+  significativa' parcela de qualquer número - talvez porque
+  representam as medidas de precisão limitada. para toda
+  números - ints ou longs - você pode mascarar alguns bits de ordem inferior;
+  para valores fracionários você pode arredondar para uma dada precisão.
+  Ao invés de testar tipos de valor explicitamente, você pode olhar para
+  capacidades numéricas. Uma maneira comum de testar a capacidade de
+  Python é a de tentar-se fazer algo, e capturar quaisquer exceções que
+  ocorrer (em seguida, tentar outra coisa). Abaixo está um exemplo simples:
+
+      # ----------- Verificando que os números podem fazer --------------- #
+      def approx(x):                # int attributes require 2.2+
+          if hasattr(x,'__and__'):  # supports bitwise-and
+              return x & ~0x0FL
+          try:                      # supports real/imag
+              return (round(x.real,2)+round(x.imag,2)*1j)
+          except AttributeError:
+              return round(x,2)
+
+OBJETOS otimizados:
+
+  A razão que o princípio de polimorfismo penetrante importa
+  é porque o Python torna fácil para criar novos objetos que se comportam
+  principalmente - mas não exatamente - como tipos de dados básicos. Arquivo-gosto
+  objetos já foram mencionados como exemplos, você pode ou não
+  pensar em um objeto de arquivo como um tipo de dados com precisão. Mas, mesmo básico
+  tipos de dados como números, strings, listas e dicionários podem ser
+  facilmente especializado e / ou emulado.
+
+  Há dois detalhes para prestar atenção quando emulando básico
+  tipos de dados. A questão mais importante a entender é que a
+  capacidades de um objeto - mesmo aqueles utilizados com sintático
+  construções - geralmente são implementadas por seus métodos "mágicos",
+  cada um nomeado com esquerda e à direita duas vezes sublinhados. Qualquer
+  objeto que possui os métodos mágicos direito pode agir como um básico
+  datatype nesses contextos que usam os métodos fornecidos. Em
+  coração, um tipo de dados básico é apenas um objeto com alguma
+  bem otimizado versões da coleção direito de magia
+  métodos.
+
+  As preocupações segundo detalhe exatamente como você chegar à magia
+  métodos - ou melhor, a melhor forma de fazer uso de
+  implementações. Não há nada que você parar de escrever o seu
+  versão própria de qualquer tipo de dados básico, com exceção para o piddling
+  detalhes de fazê-lo. No entanto, existem muito poucos detalhes tais,
+  ea maneira mais fácil para obter a funcionalidade que você quer é
+  especializar uma classe existente. Em todas as versões antigas de não-
+  Python, a biblioteca padrão fornece os módulos puro-Python
+  [UserDict], [UserList] e [UserString] como ponto de partida para
+  tipos de dados personalizados. Você pode herdar de um pai adequado
+  classe e especializar-se (magia) métodos, conforme necessário. Nenhum pais da amostra
+  são fornecidos para tuplas, ints, floats, eo resto, no entanto.
+
+  De acordo com Python 2.2 e acima, a melhor opção disponível.
+  "New-style" classes Python deixar você herda da C subjacente
+  implementações de todos os tipos de dados básicos de Python. Além disso,
+  essas classes pai tornaram-se os objetos auto-mesmas que podem ser chamadas
+  que são usados ??para coagir os tipos e construir objetos: `int ()`,
+  `List ()`, `unicode ()`, e assim por diante. Há um monte de arcana e
+  profundidades sutis que acompanha um novo estilo classes, mas você
+  geralmente não precisa se preocupar com isso. Tudo que você precisa saber
+  é que uma classe que herda a partir de [string] é mais rápido do que um
+  que herda a partir de [UserString], de igual modo para [lista] versus
+  [UserList] e [dict] versus [UserDict] (assumindo seus scripts
+  Todos correm em uma versão suficientemente recente do Python).
+
+  Tipos de dados personalizados, no entanto, não precisa especializar-se de pleno direito
+  implementações. Você é livre para criar classes que implementam
+  "Apenas o suficiente" da interface de um tipo de dados de base a ser utilizada para
+  um determinado fim. Claro que, na prática, a razão faria
+  criar esses tipos de dados personalizados ou é porque você quer que eles
+  contêm não-mágicos métodos próprios ou porque você quer que eles
+  para implementar os métodos mágicos associados com base múltipla
+  tipos de dados. Por exemplo, abaixo é um tipo de dados personalizado que pode ser
+  passado para a função 'aprox ()' antes, e que também fornece um
+  (Ligeiramente) método útil personalizado:
+
+      >>> class I:  # "Fuzzy" integer datatype
+      ...     def __init__(self, i):  self.i = i
+      ...     def __and__(self, i):   return self.i & i
+      ...     def err_range(self):
+      ...         lbound = approx(self.i)
+      ...         return "Value: [%d, %d)" % (lbound, lbound+0x0F)
+      ...
+      >>> i1, i2 = I(29), I(20)
+      >>> approx(i1), approx(i2)
+      (16L, 16L)
+      >>> i2.err_range()
+      'Value: [16, 31)'
+
+   Apesar de apoiar um método extra e ser capaz de ter passado
+   em função de 'approx()', 'I 'não é um tipo de dados muito versátil.
+   Se você tentar adicionar ou dividir ou multiplicar usando
+   "inteiros difusos", você vai dar "TypeError '. Uma vez que existem
+   não é chamado de módulo [UserInt], em uma versão mais antiga Python
+   você precisaria implementar cada método mágico necessário você mesmo.
+
+   Usando classes new-style no Python 2.2 +, você pode derivar uma
+   "integer fuzzy" do 'int' subjacente tipo de dados. Um parcial
+   implementação poderia ser semelhante a:
+
+      >>> class I2(int):    # New-style fuzzy integer
+      ...     def __add__(self, j):
+      ...         vals = map(int, [approx(self), approx(j)])
+      ...         k = int.__add__(*vals)
+      ...         return I2(int.__add__(k, 0x0F))
+      ...     def err_range(self):
+      ...         lbound = approx(self)
+      ...         return "Value: [%d, %d)" %(lbound,lbound+0x0F)
+      ...
+      >>> i1, i2 = I2(29), I2(20)
+      >>> print "i1 =", i1.err_range(),": i2 =", i2.err_range()
+      i1 = Value: [16, 31) : i2 = Value: [16, 31)
+      >>> i3 = i1 + i2
+      >>> print i3, type(i3)
+      47 <class '__main__.I2'>
+
+  Desde que o novo estilo de classe 'int' já suporta bit a bit-e,
+  não há necessidade de aplicar-la novamente. Com o novo estilo de classes,
+  você se refere a valores de dados diretamente com o 'self', e não como um
+  atributo que contém os dados (por exemplo, 'self.i' na classe 'I'). como
+  bem, isso geralmente não é seguro usar os operadores sintáticos dentro
+  métodos mágicos que definem o seu funcionamento, por exemplo, eu utilizo
+  o '.__add__()' método de 'int' o pai ao invés do '+'
+  operador no "I2.__add__ () 'método.
+
+  Na prática, você é menos provável que deseje criar um número semelhante
+  tipos de dados que vocês vão imitar os tipos de contêineres. Mas é
+  digno de se entender como e por que mesmo inteiros simples são um
+  conceito confuso em Python (a imprecisão dos conceitos é de um
+  tipo diferente do que a imprecisão de 'I2 dos números inteiros, embora).
+  Mesmo uma função que opera em números inteiros não precisa operar
+  em objetos de "IntType 'ou' LongType' - apenas em um objeto que
+  satisfaz os protocolos desejados.
+
+  TOPIC - Classes base para tipos de dados
+  --------------------------------------------------------------------
+
+   Existem vários métodos mágicos que muitas vezes são úteis para definir
+   para -qualquer- tipo de dados personalizado. De facto, estes métodos são úteis
+   mesmo para as classes que realmente não definem tipos de dados (em alguns
+   sentido, cada objeto é um tipo de dados, uma vez que podem conter
+   valores de atributos, mas não suporta cada objeto especial
+   sintaxe como operadores aritméticos e indexação). não é bem assim
+   cada método mágico que você pode definir está documentada neste
+   livro, mas a maioria está sob o tipo de dados de cada pai é mais
+   relevante. Além disso, cada nova versão do Python tem
+   introduzidos alguns métodos mágicos adicionais; abrangidos
+   ou ter sido em torno de algumas versões ou são particularmente
+   importante.
+
+   Ao documentar métodos de classe de classes base, o general mesma
+   convenções são usadas para documentar como funções do módulo. o
+   uma convenção especial para esses métodos de classe base é o uso
+   do 'self' como o primeiro argumento para todos os métodos. Uma vez que o nome
+   'self' é puramente arbitrária, esta convenção é menos especial
+   do que pode parecer. Por exemplo, ambas as seguintes utiliza
+   do 'self' são igualmente legal:
+
+      >>> import string
+      >>> self = 'spam'
+      >>> object.__repr__(self)
+      '<str object at 0x12c0a0>'
+      >>> string.upper(self)
+      'SPAM'
+
+   No entanto, geralmente há pouca razão para usar métodos de classe em
+   lugar de perfeitamente boas funções internas e com o módulo de
+   mesma finalidade. Normalmente, estes métodos de classes de tipos de dados são
+   usado apenas em classes filhas que substituem as classes de base, como
+   em:
+
+      >>> class UpperObject(object):
+      ...       def __repr__(self):
+      ...           return object.__repr__(self).upper()
+      ...
+      >>> uo = UpperObject()
+      >>> print uo
+      <__MAIN__.UPPEROBJECT OBJECT AT 0X1C2C6C>
+
+
+  =================================================================
+    BUILTIN -- object : Ancestor class for new-style datatypes
+    Classe ancestral para o novo estilo de tipos de dados
+  =================================================================
+
+   Sob o Python 2.2 +, 'object' se tornou uma base para o novo estilo de
+   classes. Herdando de 'object' permite que uma classe personalizada para
+   usar alguns recursos novos, como fendas e propriedades. mas
+   Normalmente, se você está interessado em criar um tipo de dados personalizado,
+   é melhor para herdar de um filho de 'object', como 'lista',
+   'float', ou 'dict'.

@@ -1,0 +1,453 @@
+Todas as técnicas apresentadas nos capítulos anteriores deste livro
+  têm algo em comum, mas algo que é fácil de
+  ignorar. Em certo sentido, cada string básica e regular
+  operação de expressão trata strings como homogênea. Dito de outra
+  maneira: técnicas de string e regex operar-apartamento-textos.
+  Enquanto disse que técnicas são em grande parte de acordo com o Zen "de
+  Python "máxima de que" Plano é melhor que aninhado ", por vezes, o
+  máxima (e operações homogêneos) não pode resolver um problema.
+  Às vezes os dados em um texto tem uma estrutura mais profunda do que a-
+  sequência linear de bytes que formam cadeias de caracteres.
+
+  Não é inteiramente verdade que os capítulos anteriores têm evitado
+  estruturas de dados. De tempos a tempos, os exemplos apresentados
+  quebrou textos simples em listas de linhas, ou de campos, ou de
+  segmentos pareados por padrões. Mas as estruturas utilizadas têm
+  sido bastante simples e bastante regular. Talvez um texto era
+  tratada como uma lista de substrings, com cada substring
+  manipulados de alguma forma - ou talvez até mesmo uma lista de listas de
+  substrings tais, ou uma lista de tuplas de campos de dados. Mas
+  No geral, as estruturas de dados que havia limitado (e principalmente
+  fixo) profundidade de nidificação e consistiram em sequências de itens
+  que são, eles próprios tratados de modo semelhante. O que este capítulo
+  introduz a noção de pensamento sobre textos como árvores-de-
+  nós, ou até mesmo gráficos ainda mais geralmente como.
+
+  Antes de saltar muito longe no mundo dos textos não-planos, eu
+  deve repetir um aviso que este livro tenha emitido ao longo do tempo.
+  Se você não-necessidade de usar as técnicas neste capítulo, você
+  estão melhor fora de furar com a manutenção mais simples e mais
+  técnicas discutidas nos capítulos anteriores. Resolvendo também
+  um problema geral muito cedo é uma armadilha para aplicação
+  desenvolvimento - é quase sempre melhor fazer menos do que fazer
+  mais. Escala completa de analisadores e máquinas de estado cair no "mais"
+  lado de tal escolha. Como já vimos, a classe de
+  problemas que você pode resolver usando expressões regulares - ou mesmo apenas
+  seqüência de operações - é bastante amplo.
+
+  Há outro aviso que podem ser mencionados neste ponto.
+  Este livro não pretende explicar a teoria de análise ou a
+  projeto de línguas analisáveis. Há uma série de complexidades que
+  estas questões, sobre o qual o leitor pode consultar um especialista
+  texto como o chamado "Livro do Dragão" - Aho, Sethi e Ullman
+  _Compilers: Princípio, técnicas e Tools_ - ou Levine, Mason,
+  e _Lex Brown & Yacc_. Quando Extensão Backus-Naur (EBNF)
+  gramáticas ou descrições de análise de outros são discutidos a seguir, é
+  de uma forma geral que não se aprofundar em algorítmica
+  resolução de ambiguidades ou Big-O ganhos de eficiência (pelo menos não em
+  muito detalhe). Na prática, os programadores Python diárias que são
+   textos de processamento -, mas que não está projetando nova programação
+   línguas - não precisa se preocupar com essas sutilezas de análise omitidos
+   deste livro.
+
+SEÇÃO 1 - Uma Introdução à Parsers
+-------------------------------------------------- ----------------------
+
+   TÓPICO - Quando dados torna-se profundo e textos tornam-se Stateful
+   -------------------------------------------------- ------------------
+
+   As expressões regulares podem corresponder a padrões muito complicados, mas
+   eles são insuficientes quando se trata de correspondência arbitrariamente aninhados
+   subpadrões. Tais subpadrões aninhados ocorrem muitas vezes em
+   linguagens de programação e linguagens de marcação textuais (e outros
+   lugares às vezes). Por exemplo, em documentos HTML, você pode
+   encontrar listas ou tabelas aninhadas uma dentro da outra. por esse
+   matéria, marcação nível de caractere também é permitido ao ninho
+   arbitrariamente - a seguir define um fragmento HTML válido:
+
+      >>> s = '''<p>Plain text, <i>italicized phrase,
+                 <i>italicized subphrase</i>, <b>bold
+                 subphrase</b></i>, <i>other italic
+                 phrase</i></p>'''
+
+   O problema com isto é que a maior fragmento de qualquer regulares
+   expressão será aceito tanto com menos ou mais de um desejado "<i>
+   corpo elemento. Por exemplo:
+
+      >>> ital = r'''(?sx)<i>.+</i>'''
+      >>> for phrs in re.findall(ital, s):
+      ...     print phrs, '\n-----'
+      ...
+      <i>italicized phrase,
+             <i>italicized subphrase</i>, <b>bold
+             subphrase</b></i>, <i>other italic
+             phrase</i>
+      -----
+      >>> ital2 = r'''(?sx)<i>.+?</i>'''
+      >>> for phrs in re.findall(ital2, s):
+      ...     print phrs, '\n-----'
+      ...
+      <i>italicized phrase,
+             <i>italicized subphrase</i>
+      -----
+      <i>other italic
+             phrase</i>
+      -----
+   O que está faltando nas expressões regulares propostas é um
+   conceito de-estado. Se você imaginar a leitura através de uma string
+   caractere por caractere (o que uma expressão regular deve
+   fazer dentro do motor regex subjacente), seria útil
+   manter o controle de "Quantas camadas de tags itálico eu estou?" com
+   tal uma contagem de profundidade de assentamento, seria possível descobrir
+   fora que '<i>' tag de abertura de uma tag de fechamento dado "</ i> 'foi
+   significava para corresponder. Mas expressões regulares não são estado completo em
+   o caminho certo para fazer isso.
+
+   Você encontrar um assentamento semelhante na maioria das linguagens de programação.
+   Por exemplo, suponha que temos um hipotético (um pouco
+   BASIC como a linguagem), com uma estrutura IF / THEN / END. para
+   simplificar, suponha que cada condição é escrito para coincidir com a
+   regex 'cond\d+", e cada ação partidas 'act\d+'. mas o
+   ruga é que, se as estruturas / THEN / END pode aninhar dentro de cada
+   outro também. Assim, por exemplo, vamos definir os três seguintes
+   alto nível de estruturas:
+
+      >>> s = '''
+      IF cond1 THEN act1 END
+      -----
+      IF cond2 THEN
+        IF cond3 THEN act3 END
+      END
+      -----
+      IF cond4 THEN
+        act4
+      END
+      '''
+   Como com o exemplo de marcação, você pode primeiro tentar identificar a
+   três estruturas usando uma expressão regular, como:
+
+      >>> pat = r'''(?sx)
+      IF \s+
+      cond\d+ \s+
+      THEN \s+
+      act\d+ \s+
+      END'''
+      >>> for stmt in re.findall(pat, s):
+      ...     print stmt, '\n-----'
+      ...
+      IF cond1 THEN act1 END
+      -----
+      IF cond3 THEN act3 END
+      -----
+      IF cond4 THEN
+        act4
+      END
+      -----
+
+   Este fato encontra três estruturas, mas os três errado. o
+   estrutura de alto nível deve ser o segundo comando composto
+   que usou 'cond2 ", não a sua criança usando' cond3 '. Que não é demasiado
+   difícil para permitir uma estrutura IF aninhado / THEN / END, opcionalmente
+   substituir uma ação simples, por exemplo:
+
+      >>> pat2 = '''(?sx)(
+      IF \s+
+      cond\d+ \s+
+      THEN \s+
+      (  (IF \s+ cond\d+ \s+ THEN \s+ act\d+ \s+ END)
+       | (act\d+)
+      ) \s+
+      END
+      )'''
+      >>> for stmt in re.findall(pat2, s):
+      ...     print stmt[0], '\n-----'
+      ...
+      IF cond1 THEN act1 END
+      -----
+      IF cond2 THEN
+        IF cond3 THEN act3 END
+      END
+      -----
+      IF cond4 THEN
+        act4
+      END
+      -----
+
+   Por manualmente nidificação de "primeira ordem" IF / THEN / END estrutura como um
+   alternativa para uma ação simples, que pode realmente corresponder ao
+   exemplo na forma desejada. Mas assumimos que
+   nidificação de If / Then estruturas / END vai apenas um nível profundo.
+   E se uma estrutura de "segunda ordem" está aninhado dentro de uma "terceira
+   ordem "estrutura - e assim por diante, ad infinitum o que nós
+   como é um meio de descrever as estruturas arbitrariamente aninhados em
+   um texto, de uma forma semelhante, mas em geral mais do que aquilo
+   expressões regulares podem descrever.
+
+  TOPIC - O que é uma gramática?
+  -------------------------------------------------- ------------------
+
+  A fim de analisar estruturas aninhadas em um texto, você costuma usar
+  algo chamado de "gramática". A gramática é uma especificação de um
+  conjunto de "nós" (também chamado de "produções") dispostos em um
+  estritamente hierárquica "árvore" estrutura de dados. Um nó pode ter
+  um nome - e talvez algumas outras propriedades - e ele também pode ter
+  uma coleção ordenada de nós filho. Quando um documento é
+  analisado sob uma gramática, nenhum nó resultante pode nunca ser um
+  descendente de si mesmo, o que é outra maneira de dizer que a
+  gramática produz uma árvore, em vez de um gráfico.
+
+  Em muitas implementações reais, como o famoso C-base
+  ferramentas 'lex' e 'yacc', uma gramática é expressa em duas camadas.
+  Na primeira camada, um "léxico" (ou "tokenizador"), produz um
+  corrente de "símbolos" para um "analisador" para operar. Tais fichas
+  freqüentemente são o que você poderia pensar em como as palavras ou campos, mas
+  em princípio, eles podem dividir o texto de forma diferente do que a nossa
+  idéia normal de uma "palavra". Em qualquer caso, os tokens são não sobrepostos
+  subsequences do texto original. Dependendo da específico
+  ferramenta e especificação utilizada, alguns subsequences pode ser descartado
+  do fluxo de sinal. Um "caso zero" léxico é aquele que simplesmente
+  trata os bytes de entrada reais como os tokens um analisador opera
+  em (alguns módulos discutidos fazer isso, sem perder generalidade).
+
+  A segunda camada de uma gramática é o analisador real. Um analisador
+  lê um fluxo ou a seqüência de tokens e gera uma "árvore de análise"
+  fora dele. Ou melhor, uma árvore é gerada sob o pressuposto
+  que o texto de entrada subjacente é "bem formado", segundo o
+  gramática - isto é, não é uma forma de consumir as fichas dentro do
+  especificação de gramática. Com a maioria das ferramentas do analisador, a gramática é
+  especificados usando uma variante EBNF.
+
+  Uma gramática EBNF consiste em um conjunto de declarações de regras, onde
+  cada regra permite a quantificação e alternância de que semelhante
+  em expressões regulares. Diferentes ferramentas usar um pouco diferente
+  sintaxe para especificar gramáticas e ferramentas diferentes também diferem
+  em expressividade e disponível quantificadores. Mas quase todas as ferramentas
+  ter uma sensação bastante semelhantes em suas especificações gramaticais. Mesmo
+  os DTDs utilizados nas especificações dialeto XML (ver Capítulo 5) têm
+  uma sintaxe muito semelhante a outras línguas de gramática - o que faz
+  sentido uma vez que um dialeto XML é uma gramática particular. A entrada DTD
+  se parece com:
+
+      #*----- EBNF-style description in a developerWorks DTD -----#
+      <!ELEMENT body  ((example-column | image-column)?, text-column) >
+
+   Em resumo, a amostra sob DTD, um elemento «<body> 'pode conter
+   um ou zero ocorrências de uma "primeira coisa" - que primeiro
+   coisa ser-ou-um "<example-column> 'ou um
+   '<image-column>'. Após o primeiro componente opcional,
+   exatamente deve ocorrer uma '<text-column>. É claro que gostaríamos
+   preciso ver o resto do DTD para ver o que pode ir de uma
+   '<text-column>', ou para ver o outro elemento (s) a '<body>'
+   pode ser contido dentro Mas cada um desses regra é semelhante em forma.
+
+   A EBNF gramática familiar para programadores Python é a gramática
+   por si Python. Em muitas instalações do Python, esta gramática
+   como um único arquivo pode ser encontrado em um local do disco como
+   "[...] / Python22/Doc/ref/grammar.txt. O on-line e
+   download _Python Língua Reference_ trechos da
+   gramática em vários pontos. Como um exemplo, um ponto flutuante
+   número em Python é identificado pela especificação:
+
+      #---- EBNF-style description of Python floating point ---#
+      floatnumber   ::= pointfloat | exponentfloat
+      pointfloat    ::= [intpart] fraction | intpart "."
+      exponentfloat ::= (intpart | pointfloat) exponent
+      intpart       ::= digit+
+      fraction      ::= "." digit+
+      exponent      ::= ("e" | "E") ["+" | "-"] digit+
+      digit         ::= "0"..."9"
+
+   A gramática Python é dada em uma variante que permite EBNF
+   expressividade considerável. A maioria das ferramentas deste capítulo
+   discute são relativamente limitado (mas ainda são em última análise,
+   capaz de expressar tal como gramáticas gerais, embora mais
+   verbosely). Ambas as strings literais e intervalos de caracteres pode ser
+   especificada como parte de uma produção. Alternância é expressa
+   com "|". As quantificações são utilizados tanto com "+" e "*".
+   Estas características são muito semelhantes aos de expressão regular
+   sintaxe. Adicionalmente, os grupos opcionais são indicados com
+   colchetes ("[" e "']"), e os grupos obrigatórios com
+   parênteses. Conceptualmente o primeiro é o mesmo que a expressão regular
+   "?" quantificador.
+
+   Quando uma gramática EBNF vai além de um padrão de expressão regular
+   é, na sua utilização de termos designados como partes de padrões. a princípio
+   vista, pode parecer possível simplesmente substituir regulares
+   padrões de expressão para subexpressions nomeados. Na verdade, no
+   padrão de ponto flutuante apresentado, poderíamos simplesmente fazer isso como:
+
+      #---- Regular expression to identify a floating point ----#
+      pat = r'''(?x)
+            (                   # exponentfloat
+              (                 # intpart or pointfloat
+                (               # pointfloat
+                  (\d+)?[.]\d+  # optional intpart with fraction
+                  |
+                  \d+[.]        # intpart with period
+                )               # end pointfloat
+                |
+                \d+             # intpart
+              )                 # end intpart or pointfloat
+              [eE][+-]?\d+      # exponent
+            )                   # end exponentfloat
+            |
+            (                   # pointfloat
+              (\d+)?[.]\d+      # optional intpart with fraction
+              |
+              \d+[.]            # intpart with period
+            )                   # end pointfloat
+            '''
+  Como uma expressão regular, a descrição é mais difícil de ler, mesmo
+  com a documentação detalhada adicionado a uma expressão regular. A gramática EBNF
+  é mais ou menos auto-documentado. Além disso, algum cuidado teve que ser
+  tomadas sobre a ordem da expressão regular - o
+  É necessário alternativa »exponentfloat 'coletados antes da
+  'Pointfloat' alternativa uma vez que o último pode formar uma subsequência
+  deste último. Mas, além da necessidade de um pouco de ajustes e
+  documentação, a expressão regular acima é exatamente como
+  geral - e exatamente equivalente - a gramática Python para um
+  número de ponto flutuante.
+
+  Você pode se perguntar, portanto, qual é o ponto de uma gramática é.
+  Acontece que um número de ponto flutuante é uma invulgarmente
+  estrutura simples em um aspecto muito específico. A 'floatnumber'
+  não requer nenhuma recursão ou auto-referência em sua definição.
+  Tudo o que compõe a 'floatnumber "é algo mais simples,
+  e tudo o que compõe uma das componentes mais simples é
+  própria composta por aqueles ainda mais simples. Você chega a um fundo em
+  a definição de um número de ponto flutuante Python.
+
+  No caso geral, as estruturas podem conter de forma recursiva
+  -se, diretamente ou por conter outras estruturas
+  que por sua vez, contêm as primeiras estruturas. Não é mesmo
+  totalmente absurdo imaginar números de ponto flutuante com tal
+  uma gramática (que língua eles tinham não seria Python,
+  no entanto). Por exemplo, o famoso número um "googol", foi
+  definido em 1938 por Edward Kasner como 10 elevado à potência 100
+  (Também chamado de "10 dotrigintillion"). Como flutuante Python
+  ponto, você poderia escrever isso como '1 e100. Kasner definiu também um
+  "Googolplex" como 10 para a potência googol (um número muito maior
+  que alguém precisa, por qualquer razão prática). Enquanto você pode
+  criar uma expressão Python para citar googolplex - por exemplo,
+  '10 ** 1e100' - não é difícil conceber uma programação
+  língua que permitiu que o termo e1e100 '1 'como um nome para um
+  googolplex. By the way: Se você tentar realmente-compute-a
+  googolplex em Python (ou qualquer outra linguagem de programação), você
+  vai estar em decepção; esperar um computador congelado e / ou
+  algum tipo de acidente ou estouro. Os números podem expressar em
+  a maioria das gramáticas de línguas são um pouco mais numerosos do que aqueles
+  seu computador pode realmente fazer alguma coisa com ele.
+
+  Suponha que você quisesse permitir que estes novos flutuante "estendida"
+  apontar termos de uma linguagem. Em termos de gramática, você poderia
+  basta alterar a linha da descrição EBNF:
+
+      #*----- EBNF description of "extended floating point -----#
+      exponent ::= ("e" | "E") ["+" | "-"] floatnumber
+
+   Na expressão regular, a mudança é um problema. A
+   porção da expressão regular identifica o (opcional)
+   expoente:
+
+      #*-------- Regular expression for option exponent --------#
+      [eE][+-]?\d+      # exponent
+
+   Neste caso, um expoente é apenas uma série de personagens dígitos.
+   Mas para termos "estendidos" de ponto flutuante, a expressão regular
+   seria necessário substituir toda a expressão regular 'pat' em
+   lugar de '\ d +'. Infelizmente, isso é impossível, uma vez que cada
+   substituição ainda conteria a insuficiente '\ d +'
+   Descrição, o que de novo requer substituição. o
+   seqüência de substituições continua ad infinitum, até a
+   expressão regular é infinitamente longo.
+
+   TOPIC - uma gramática EBNF para IF / THEN / END Estruturas
+   -------------------------------------------------- ------------------
+
+   O IF / THEN estrutura da linguagem / END apresentada é uma mais
+   exemplo típico e realista de estruturas gramaticais nestable
+   que são os nossos números "estendidos" de ponto flutuante. Na verdade,
+   Python - juntamente com quase todos os outros programas
+   linguagem - permite precisamente essa 'se' comandos dentro de outro 'se'
+   declarações. Vale a pena olhar para a forma como podemos descrever nossa
+   simplificada hipotética estrutura IF / THEN / END no mesmo EBNF
+   variante utilizada para a gramática do Python.
+
+   Lembre-se primeiro as nossas regras simplificadas para estruturas permitidas:
+   As palavras-chave são 'IF', 'THEN', e 'END', e eles sempre ocorrem
+   em que a ordem dentro de uma estrutura completa. Palavras-chave neste
+   linguagem está sempre em todas as capitais. Qualquer espaço em branco em um
+   texto de origem é insignificante, a não ser que cada termo é
+   separadas dos outros por pelo menos alguns espaços em branco. cada
+   condição está escrito para coincidir com a expressão regular 'cond \ d +'.
+   Cada IF "corpo" ou contém uma ação que corresponda ao
+   expressão "ato \ d + 'regular, ou-it contém outra
+   IF / THEN / END estrutura. Em nosso exemplo, nós criamos três
+   Se as estruturas / THEN / END, uma das quais continha uma aninhada
+   estrutura:
+
+      #*-------- IF/THEN/END examples --------#
+      IF cond1 THEN act1 END
+      -----
+      IF cond2 THEN
+        IF cond3 THEN act3 END
+      END
+      -----
+      IF cond4 THEN
+        act4
+      END
+
+  Let us try a grammar:
+
+      #------- EBNF grammar for IF/THEN/END structures --------#
+      if_expr   ::= "IF" ws cond ws "THEN" ws action ws "END"
+      whitechar ::= " " | "\t" | "\n" | "\r" | "\f" | "\v"
+      ws        ::= whitechar+
+      digit     ::= "0"..."9"
+      number    ::= digit+
+      cond      ::= "cond" number
+      action    ::= simpleact | if_expr
+      simpleact ::= "act" number
+
+   Esta gramática é bastante fácil de seguir. Ele define alguns
+   "conveniência" produções como 'ws' e 'número', que consistem
+   de repetições de produções mais simples. 'whitechar' é definido
+   como uma alternância explícita dos caracteres individuais, como é
+   «dígitos» para uma gama contínua. Levado ao extremo, cada
+   produção poderia realmente ser incluídos numa muito
+   mais produção "if_expr 'verbose - você apenas substituir
+   todos os lados direitos das produções aninhadas para os nomes em
+   a produção 'if_expr'. Mas como dado, a gramática é muito
+   mais fácil de ler. O aspecto mais notável desta gramática é o
+   produção de 'ação', uma vez que uma 'ação' pode se recursivamente
+   contêm um 'if_expr'.
+
+   Para este problema, o leitor é convidado para desenvolver gramáticas
+   para algumas variações mais robustos no simples IF / THEN / END
+   linguagem vimos. Como é evidente, é difícil
+   realmente fazer muita coisa com essa linguagem, por si só, mesmo que a sua
+   ações e condições são dadas significado semântico fora do
+   estrutura. Os leitores podem inventar suas próprias variações, mas alguns
+   Propõem-se abaixo.
+
+   TOPIC - Análise de lápis e papel
+   -------------------------------------------------- ------------------
+
+   Para testar uma gramática, neste ponto, apenas tentar expandir cada
+   caráter sucessivo em alguma produção que é permitido
+   que ponto a produção pai, usando lápis e papel.
+   Pense no texto de casos de teste como uma fita: Cada símbolo ou
+   completa uma produção (em caso afirmativo, escreva a produção satisfeito
+   ao lado da subsequência), ou o símbolo é adicionado à
+   "register insatisfeito." Há mais uma regra a seguir com
+   lápis e papel, no entanto: É melhor para satisfazer a produção
+   com uma subsequência mais do que um mais curto. Se um pai
+   produção consiste em produções infantis, as crianças devem ser
+   satisfeito na ordem especificada (e na quantidade
+   necessário). Por enquanto, assumir apenas um caráter de lookahead em
+   tentando seguir essa regra. Por exemplo, suponha que você encontrar o
+   seguinte seqüência em um caso de teste:
+
+      #*-------- Pencil-and-Paper Parsing examples --------#
+      "IF   cond1..."
+

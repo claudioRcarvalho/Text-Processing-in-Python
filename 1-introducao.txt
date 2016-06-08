@@ -1,0 +1,479 @@
+Frontmatter - PREFÁCIO
+-------------------------------------------------- -----------------
+
+     Bonito é melhor que feio.
+     Explícito é melhor que implícito.
+     Simples é melhor que complexo.
+     Complexo é melhor do que complicado.
+     Plano é melhor que aninhado.
+     Esparso é melhor que denso.
+     Legibilidade conta.
+     Casos especiais não são especiais o suficiente para quebrar as regras.
+     Embora praticidade bate pureza.
+     Erros nunca deveriam passar em silêncio.
+     A menos que explicitamente silenciados.
+     Diante da ambigüidade, recuse a tentação de adivinhar.
+     Deve haver um - e preferencialmente só um - modo óbvio para fazer isso.
+     Apesar de que forma pode não ser óbvio à primeira vista, a menos que você seja holandês.
+     Agora é melhor do que nunca.
+     Embora nunca é freqüentemente melhor do que o * direito * agora.
+     Se a implementação é difícil de explicar, é uma má idéia.
+     Se a implementação é fácil de explicar, pode ser uma boa idéia.
+     Namespaces são uma grande idéia honking - vamos fazer mais desses!
+       - Tim Peters, "The Zen of Python"
+
+SEÇÃO 1 - O que é Processamento de Texto?
+-------------------------------------------------- -----------------
+
+  No mais amplo de transformação nível de texto é simplesmente tomar textual
+  informações e-fazendo-algo com ele. Esta fazendo pode ser
+  reestruturação ou reformatar, extrair pequenos pedaços de
+  informações a partir dele, algoritmicamente modificação do conteúdo do
+  os cálculos de informação, ou a realização que dependem do
+  informação textual. As linhas entre "texto" eo mesmo
+  termo mais geral "dados" são extremamente nebulosa; em um
+  aproximação, "texto" é apenas dados que vive em formas que
+  as pessoas podem-se ler - pelo menos em princípio, e talvez
+  com um pouco de esforço. Mais tipicamente computador "texto" é
+  composto de seqüências de bits que têm um "natural"
+  representação como letras, e símbolos; na maioria das vezes
+  texto, é delimitado (se delimitado em tudo) por símbolos e
+  formatação que podem ser facilmente pronunciado como "dado que vem."
+
+  As linhas são fuzzy, mas os dados que, pelo menos parece como
+  texto - e que, portanto, este livro especial é o menor
+  preocupado com - são os dados que compõe a "multimídia"
+  (Imagens, sons, vídeos, animações, etc) e dados que faz
+  até UI "eventos" (desenhar uma janela, mova o mouse, abrir uma
+  aplicação, etc.) Como eu disse, as linhas são fuzzy, e alguns
+  representações dos dados mais não textuais são eles próprios
+  muito textual. Mas, em geral, o objecto do presente livro é
+  todas as coisas no lado mais próximo da linha fuzzy.
+
+  Processamento de texto é sem dúvida o que a maioria dos programadores passam a maior parte
+  seu tempo fazendo. As informações que vive no mundo dos negócios
+  sistemas de software em sua maioria se resume a coleções de palavras
+  sobre o domínio da aplicação - talvez com alguns símbolos especiais
+  misturado dentro de protocolos de Internet de comunicação consistem principalmente de
+  algumas palavras especiais usados ??como cabeçalhos, um pouco de
+  formatação constrangida, e corpos de mensagens que consistem em
+  adicionais textos wordish. Os arquivos de configuração, arquivos de log CSV
+  e de comprimento fixo arquivos de dados, ficheiros de erro, documentação e
+  código fonte em si, são sequências de todos apenas de palavras com bits
+  de restrição e formatação aplicada.
+
+  Programadores e desenvolvedores de gastar tanto tempo com o texto
+  processamento que é fácil esquecer que isto é o que somos
+  fazendo. A aplicação de processamento de texto mais comum é provavelmente
+  seu editor de texto favorito. Além de simples entrada de novos
+  personagens, editores de texto executar tarefas de processamento de texto tais como
+  procurar / substituir e copiar / colar, que - dada a interação guiada
+  com o usuário - realizar manipulação sofisticada de
+  fontes textuais. Muitos editores de texto ir mais longe do que estes
+  recursos simples e incluir a sua própria programação completa
+  sistemas (normalmente chamado de "processamento de macro"), nesses casos
+  onde os editores incluem "Turing-complete" linguagens de macro de texto,
+  editores são suficientes, em princípio, para realizar qualquer coisa que a
+  exemplos deste livro pode.
+
+  Depois de editores de texto, uma variedade de ferramentas de processamento de texto são
+  amplamente utilizada pelos desenvolvedores. Ferramentas como o "Find File" sob
+  Windows, ou "grep" no Unix (e outras plataformas), realizar a
+  tarefa básica de localização de texto padrões. "Línguas pequenas"
+  como sed e awk executar a manipulação de texto simples (ou mesmo
+  não-básico). Um grande número de utilidades - especialmente em
+  Ambientes Unix-like - executar o processamento de texto pequeno personalizado
+  tarefas: 'wc', 'tipo', 'tr', 'md5sum', 'uniq', 'divisão',
+  'Cordas', e muitos outros.
+
+  No topo da cadeia alimentar de processamento de texto são de propósito geral
+  linguagens de programação, como Python. Eu escrevi este livro sobre
+  Python em grande parte porque Python é tão clara, expressiva,
+  e linguagem de propósito geral. Mas para todos virtudes Python texto,
+  editores e utilitários "pouco" sempre terá um importante
+  lugar para os desenvolvedores de "fazer o trabalho." Tão simples como Python
+  é, ainda é mais complicado do que você precisa para alcançar muitos
+  tarefas básicas. Mas, uma vez que você passar por algo muito simples, Python é uma
+  linguagem perfeita para fazer as coisas difíceis possível (e
+  também é bom em fazer as coisas fáceis simples).
+
+
+SECÇÃO 2 - A Filosofia de Processamento de Texto
+-------------------------------------------------- -----------------
+
+  Pendure ao redor de quaisquer grupos de discussão Python para um pouco,
+  e certamente você vai se deslumbrar com as contribuições da
+  Python promotor, Tim Peters (e por um número de outros
+  Pythonistas). Sua "Zen de Python" capta muito da razão
+  que eu escolhi Python como a linguagem em que a maioria resolver
+  tarefas de programação que são apresentados para mim. Mas para entender
+  o que é mais especial sobre o texto-processamento, como uma programação
+  tarefa, vale a pena voltar-se para cardeal Perl criador Larry Wall
+  virtudes da programação: a preguiça, impaciência, arrogância,.
+
+  O que define o processamento de texto mais claramente para além de outras tarefas
+  programadores de computador realizar é a freqüência com a qual nós
+  executar o processamento de texto em um ad hoc ou "one-shot" base. Um
+  raramente se preocupa em criar um one-shot interface gráfica para uma
+  programa. Você ainda menos freqüentemente realizar uma one-shot
+  normalização de um banco de dados relacional. Mas todo programador
+  com um pouco de experiência tem tido numerosas ocasiões em que ela
+  recebeu uma gota de informação textual (ou talvez um
+  dilúvio dela) de outro departamento, de um cliente, a partir de um
+  desenvolvedor que está trabalhando em um projeto diferente, ou a partir de dados despejado
+  de um SGBD, o problema nesses casos é sempre a "processo"
+  o texto para que ele seja útil para o seu próprio projeto, programa,
+  banco de dados, ou unidade de trabalho. Processamento de texto para o resgate. Este
+  é onde a virtude de impaciência aparece pela primeira vez - nós só queremos
+  o material processado, agora mesmo!
+
+  Mas as tarefas de processamento de texto que foram, obviamente, one-shot tarefas
+  que sabia que nunca seria necessário voltar a ter o hábito de vir
+  volta como fantasmas inquietos. Acontece que esse cliente precisa
+  para atualizar os dados de um tempo eles enviados no mês passado. Ou o chefe
+  decide que ela realmente gostaria de uma característica que o texto
+  resumida de uma forma ligeiramente diferente. A virtude da preguiça
+  é o nosso amigo aqui - com a nossa previsão não para realmente excluir
+  esses scripts one-shot, nós tê-los disponíveis para facilitar a reutilização
+  e / ou modificação, quando a necessidade surge.
+
+  Suficiente não é suficiente, no entanto. Esse script você relutantemente
+  utilizado uma segunda vez acaba por ser bastante semelhante a um mais
+  tarefa geral, você vai precisar para realizar com freqüência, talvez até
+  automaticamente. Você imagina que com apenas uma pequena quantidade de
+  trabalho extra que você pode generalizar e expandir o script, talvez adicionar
+  uma verificação de erros pouco e algumas opções de tempo de execução, enquanto você está
+  para ele, e fazer tudo no prazo e do orçamento (ou até mesmo como um
+  projeto paralelo, fora do orçamento). Obviamente, esta é a voz de
+  que a maior das virtudes dos programadores: arrogância.
+
+  O objetivo deste livro é fazer com que seus leitores um pouco mais preguiçoso, um
+  smidgeon mais impaciente, e um monte mais arrogante.
+  Python só acontece de ser a linguagem mais adequada para o estudo
+  da virtude.
+
+SECÇÃO 3 - De que você precisa para usar este livro
+-------------------------------------------------- -----------------
+
+  Este livro é ideal para programadores que estão um pouco
+  pouco familiarizado com o Python, e cuja diária tarefas envolvem uma feira
+  quantidade de tarefas de processamento de texto. Os programadores que têm algum
+  experiência em outras linguagens de programação - especialmente com
+  outras línguas "Scripting" - deve ser capaz de pegar o suficiente
+  Python para se ir lendo o Apêndice A.
+
+  Enquanto Python é uma linguagem bastante simples de coração, este livro é
+  não pretende ser um tutorial sobre Python para não-programadores. Em vez disso,
+  este livro é sobre duas outras coisas: começar o trabalho feito,
+  pragmática e eficiente, e entender por que o que funciona
+  funciona eo que não funciona não funciona, teoricamente e
+  conceitualmente. Como tal, esperamos que este livro pode ser útil tanto para
+  programadores que trabalham e aos estudantes de programação a nível
+  apenas após o introdutório.
+
+  Muitas seções deste livro são acompanhados por problemas e
+  exercícios, e estes, por sua vez, muitas vezes fazem perguntas para os usuários.
+  Na maioria dos casos, as respostas às perguntas listadas estão um pouco
+  em aberto - não há respostas simples certas. Creio que
+  trabalhar com as questões fornecidas ajudará tanto
+  auto-dirigido e instrutor guiada alunos, as questões podem
+  normalmente ser respondida em vários níveis e muitas vezes têm um
+  subjacente sutileza. Instrutores que pretendam utilizar este texto são
+  encorajados a contatar o autor para a assistência na estruturação
+  um currículo que envolve isso. Todos os leitores são encorajados a
+  consulte o site do livro Web para ver possíveis respostas fornecidas pelo
+  tanto o autor e outros leitores, além de perguntas relacionadas com
+  será adicionado ao site ao longo do tempo, juntamente com outros
+  recursos.
+
+  A linguagem Python em si é conservadora. Quase todos os
+  Python script escrito há dez anos para Python 1.0 irá executar
+  multa no Python 2.3 +. No entanto, como versões melhorar, uma certa
+  número de novos recursos foram adicionados. O mais significativo
+  mudanças têm acompanhado as mudanças no número de versão 2.0 - Python
+  introduzidas lista compreensões, atribuições aumentadas, Unicode
+  suporte, e um pacote padrão XML. Muitos scripts escritos em
+  da maneira mais natural e eficiente usando o Python 2.0 + vontade
+  não executar sem alterações em versões anteriores do Python.
+
+  O objectivo geral deste livro será usuários do Python 2.1 +,
+  mas algumas características 2,2 + específicos será utilizado nos exemplos.
+  Talvez metade dos exemplos neste livro funcionará bem em Python
+  1.5.1 + (e um pouco menos em versões mais antigas), mas os exemplos
+  não indicam, necessariamente, sua exigência para o Python 2.0 +
+  (Quando existe). Por outro lado, as características novas introduzido
+  com o Python 2.1 e acima somente será utilizada quando eles fazem
+  uma tarefa muito mais fácil, ou onde a característica em si é
+  sendo ilustrada. Em qualquer caso, exemplos requerendo versões
+  passado Python 2.0 irá normalmente indicam isto explicitamente.
+
+  No caso dos módulos e pacotes - se na norma
+  biblioteca ou de terceiros - que vai indicar explicitamente o Python
+  versão é necessária e, quando pertinente, a versão que acrescentou
+  o módulo ou pacote para a biblioteca padrão. Em alguns casos,
+  que será possível utilizar módulos de biblioteca posterior standard, com
+  versões anteriores do Python. Em casos importantes, esta possibilidade
+  será notada.
+
+
+SECÇÃO 4 - Convenções usadas neste livro
+-------------------------------------------------- -----------------
+
+  Várias convenções tipográficas são usadas no texto principal para guiar
+  o olho leitores. Literais tanto bloco e inline são apresentados na
+  uma fonte fixa, incluindo os nomes dos utilitários, URLs, nomes de variáveis,
+  e amostras de código. Nomes de objetos na biblioteca padrão,
+  no entanto, são apresentados em itálico. Os nomes dos módulos e pacotes
+  são impressos em um tipo de letra sans serif. A posição vêm em vários
+  diferentes fontes, dependendo do seu nível e propósito.
+
+  Todas as constantes, funções e classes em discussões e
+  referências cruzadas serão explicitamente prefixado com a sua
+  namespace (módulo). Métodos, adicionalmente, ser precedidas
+  com sua classe. Em alguns casos, exemplos de código vai usar o
+  namespace local, mas uma preferência por namespace explícito
+  identificação estará presente no código de exemplo também. Para
+  exemplo, uma referência pode ler-se:
+
+  ->
+
+  VEJA TAMBÉM: 'email.Generator.DecodedGenerator.flatten () ',
+  'Raw_input ()', 'tempfile.mktemp ()'
+
+  <-
+
+  O primeiro é um método de classe no módulo [email.Generator];
+  a segunda, uma função interna, o último, uma função na
+  [Tempfile] módulo.
+
+  No caso especial de métodos embutidos em tipos, os
+  expressão para um objecto de tipo vazio irá ser utilizado no estilo
+  de um modificador de namespace. Por exemplo:
+
+  -> +
+
+  Métodos de tipos built-in incluem '[] sort ().', '" ". Islower ()',
+  . '{} Chaves ()' e '(lambda: 1) func_code'..
+
+  <-
+
+  O tipo de objeto de arquivo será indicado por 'File' o nome em
+  capitais, uma referência a um método de objeto de arquivo aparecerá como,
+  por exemplo:
+
+  ->
+
+  VEJA TAMBÉM: 'FILE.flush () '
+
+  <-
+
+  Breves ilustrações em linha de conceitos e Python
+  utilização serão tomadas a partir do shell interativo do Python. Este
+  abordagem permite que os leitores para ver a avaliação imediata de
+  construções, tanto quanto eles poderiam explorar Python si.
+  Além disso, os exemplos apresentados neste modo será
+  auto-suficiente (não necessitando de dados externos), e pode ser
+  entrou - com variações - por leitores tentando ter uma idéia sobre um
+  conceito. Por exemplo:
+
+  -> +
+
+      # * ----- Amostra Shell ----- #
+      >>> 13/7 # divisão inteira
+      1
+      >>> 13/7. # Flutuar divisão
+      1,8571428571428572
+
+  <-
+
+  Na documentação das funções de módulos, onde são argumentos nomeados
+  disponíveis, eles são listados com seu valor padrão. Opcional
+  argumentos são listados entre colchetes. Essas convenções são
+  também utilizado no Reference_ Biblioteca _Python. Por exemplo:
+
+  ->
+
+  foobar.spam (s, val = 23 [gosto, = "spicy"])
+      A função 'foobar.spam ()' usa 's' o argumento de ...
+
+  <-
+
+  Se ~ a ~ chamado argumento não tem um valor padrão especificável,
+  o argumento é listado seguido por um sinal de igual e reticências.
+  Por exemplo:
+
+  ->
+
+  foobar.baz (string = ..., maxlen = ...)
+      O foobar.baz () 'função ...
+
+  <-
+
+  Com a introdução do suporte a Unicode em Python, uma
+  equivalência entre um personagem e um byte não se sustenta mais em
+  todos os casos. Sempre que uma operação leva um argumento numérico
+  afetando um objeto string-como, a documentação deve incluir
+  se os caracteres ou bytes são contados. Por exemplo:
+
+  -> +
+
+  Uma operação de bytes lê 'num' do buffer. Operação B
+  lê caracteres 'num' do buffer.
+
+  <-
+
+  A primeira operação indica um número de reais de 8-bit bytes
+  afetados. A segunda operação indica um número indefinido de
+  bytes são afetados, mas que eles compõem um número de (talvez
+  multibyte) caracteres.
+
+
+SEÇÃO 5 - Uma palavra sobre exemplos de código fonte
+-------------------------------------------------- -----------------
+
+   As primeiras coisas primeiro. Todo o código fonte neste livro é aqui
+   liberada para o domínio público. Você pode utilizá-lo como
+   gosta, sem restrição. Você pode incluí-la no livre
+   software, ou em projetos comerciais / proprietários. Mude-o para
+   conteúdo do seu coração, e de qualquer maneira que você quer. Se você se sente
+   como dar crédito ao autor (ou enviá-lo verificações grandes)
+   para o código que você achar útil, que é bom - mas não a obrigação de fazer
+   assim existe.
+
+   Todo o código fonte neste livro, público e vários outros
+   exemplos de domínio, podem ser encontradas no site do livro na Internet. Se tal
+   um formulário eletrônico é mais conveniente para você, esperamos que este
+   ajuda a você. Na verdade, se você é capaz, você pode se beneficiar
+   visitar este local, onde você pode encontrar versões atualizadas
+   de exemplos ou outros utilitários úteis não mencionadas no
+   livro.
+
+   Primeiras coisas fora do caminho, vamos nos voltar para coisas secundárias.
+   Pouco do código-fonte neste livro destina-se como uma final
+   dizer sobre como executar uma determinada tarefa. Muitos dos exemplos são
+   fácil o suficiente para copiar diretamente para o seu próprio programa, ou usar
+   como stand-alone utilitários. Mas o objetivo real na apresentação do
+   exemplos é educacional. Nós realmente esperamos que sim, acho que sobre-
+   que os exemplos fazer, e porque o fazem da maneira que fazem. em
+   fato, esperamos que os leitores vão pensar de melhor, mais rápido e mais
+   maneiras de se realizar as mesmas tarefas. Se os exemplos
+   trabalhar o seu melhor, eles deveriam ser melhor como inspiração do que como
+   instruções.
+
+SEÇÃO 6 - Recursos Externos
+-------------------------------------------------- -----------------
+
+  TOPIC - Geral de Recursos
+  -------------------------------------------------- ------------------
+
+  A câmara de compensação bom para recursos e links relacionados a este
+  livro é o site do livro na Internet. Com o tempo, vou acrescentar errata e
+  exemplos adicionais, perguntas, respostas, utilitários e assim por diante para
+  o site, de modo a verificar que de vez em quando:
+
+    <http://gnosis.cx/TPiP/>
+
+  O primeiro lugar que você provavelmente deve virar para-qualquer pergunta sobre
+  Programação Python (depois deste livro), é:
+
+    <http://www.python.org/>
+
+  "<comp.lang.python>" O grupo de notícias Python é uma incrivelmente útil
+  recurso, com a discussão que geralmente é amigável e
+  erudita. Você também pode enviar mensagens para e siga o grupo de notícias através de uma
+  espelhado mailing list:
+
+    <http://mail.python.org/mailman/listinfo/python-list>
+
+  TOPIC - Livros
+  -------------------------------------------------- ------------------
+
+  Este livro geralmente visa um leitor de intermediário. Outro
+  Livros de Python são textos introdutórios melhor (especialmente para
+  aqueles relativamente novo em programação em geral). Algumas boas
+  textos introdutórios são:
+
+    _Core Python Programming_, Wesley J. Chun, Prentice Hall,
+    2001. ISBN: 0-130-26036-3.
+
+    Python_ _Learning, Mark Lutz & David Ascher, O'Reilly, 1999.
+    ISBN: 1-56592-464-9.
+
+    _O Rápida Python Book_, Daryl Harms & Kenneth McDonald,
+    Manning, 2000. ISBN: 1-884777-74-0.
+
+  Como introduções, eu geralmente recomendo estes livros no
+  ordem listada, mas os estilos de aprendizagem variam entre os leitores.
+
+  Dois textos que se sobrepõem este livro um pouco, mas se concentrar mais
+  estritamente em referência a biblioteca padrão são:
+
+    _Python Referência essencial, Edição_ Em segundo lugar, David M.
+    Beazley, New Riders, 2001. ISBN: 0-7357-1091-0.
+
+    _Python Padrão Library_, Fredrik Lundh, O'Reilly, 2001.
+    ISBN: 0-596-00096-0.
+
+  Para a cobertura de XML, em um nível muito mais detalhado do que esta
+  livro tem espaço para, é o excelente texto:
+
+    _Python & XML_, Christopher A. Jones & Fred L. Drake, Jr.,
+    O'Reilly, 2002. ISBN: 0-596-00128-2.
+
+
+TÓPICO - Diretórios Software
+  -------------------------------------------------- ------------------
+
+  Atualmente, o melhor diretório Python específico para software é
+  Vaults of Parnassus:
+
+    <http://www.vex.net/parnassus/>
+
+  SourceForge é um recurso de software de código aberto em geral. Muitos
+  projetos - Python e outros - são hospedados no site, e
+  o site oferece recursos de busca, palavras-chave, categoria
+  a navegação, e similares:
+
+    <http://sourceforge.net/>
+
+  Freshmeat é outro diretório amplamente utilizado de projetos de software
+  (Fonte mais aberto). Como os Vaults of Parnassus, Freshmeat
+  não diretamente hospedar arquivos de projeto, mas simplesmente age como um
+  central de informações para encontrar projectos relevantes:
+
+    <http://freshmeat.net/>
+
+
+  TÓPICO - Software Específico
+  -------------------------------------------------- ------------------
+
+  Uma série de projetos Python são discutidas neste livro. A maioria
+  daqueles estão listados em uma ou mais das listas de software
+  acima mencionado. Um motor de busca como o Google em geral,
+  <http://google.com>, também é útil na localização de projecto
+  home pages. Abaixo estão um número de URLs de projetos que estão em curso
+  no momento da redação deste texto. Se algum destes cair fora da data
+  pelo tempo que você ler este livro, tente procurar em uma pesquisa
+  motor ou diretório de software para um URL atualizado.
+
+  O autor-Gnosis Utilities contém um número de Python
+  pacotes mencionados neste livro, incluindo [gnosis.indexer],
+  [Gnosis.xml.indexer], [gnosis.xml.pickle], e outros. Você pode
+  download da versão mais atual de:
+
+    <http://gnosis.cx/download/Gnosis_Utils-current.tar.gz>
+
+  eGenix.com fornece um número de extensões úteis Python, alguns
+  dos quais estão documentados neste livro. Estes incluem
+  [Mx.TextTools], [], mx.DateTime severeral novos tipos de dados, e
+  outras facilidades:
+
+    <http://egenix.com/files/python/eGenix-mx-Extensions.html>
+
+  [SimpleParse] é hospedado pelo SourceForge, no endereço:
+
+    <http://simpleparse.sourceforge.net/>
+
+  Os [] PLY parsers tem uma home page em:
+
+    <http://systems.cs.uchicago.edu/ply/ply.html> «
